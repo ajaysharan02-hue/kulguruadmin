@@ -66,7 +66,7 @@ const Login = () => {
                         <FaGraduationCap className="text-4xl text-primary-600" />
                     </div>
                     <h1 className="text-4xl font-bold text-white mb-2">
-                        School Management System
+                        Kulguru Institute of Technology and Management
                     </h1>
                     <p className="text-primary-100">
                         Sign in to access your dashboard
@@ -199,22 +199,12 @@ const Login = () => {
                         </button>
                     </form>
 
-                    {/* Demo Credentials */}
-                    <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-                        <p className="text-xs text-gray-600 font-semibold mb-2">
-                            Demo Credentials:
-                        </p>
-                        <div className="text-xs text-gray-500 space-y-1">
-                            <p>Admin: admin@school.com / admin123</p>
-                            <p>Teacher: teacher@school.com / teacher123</p>
-                            <p>Student: student@school.com / student123</p>
-                        </div>
-                    </div>
+                   
                 </div>
 
                 {/* Footer */}
                 <p className="text-center text-primary-100 text-sm mt-8">
-                    © 2026 School Management System. All rights reserved.
+                    © 2026 Kulguru Institute of Technology and Management. All rights reserved.
                 </p>
             </div>
         </div>
