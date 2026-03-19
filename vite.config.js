@@ -8,7 +8,8 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': {
-        target: 'http://localhost:5000',
+        // target: 'http://localhost:5000',
+        target: 'https://kulguruserver-production.up.railway.app',
         changeOrigin: true,
         secure: false,
       },
