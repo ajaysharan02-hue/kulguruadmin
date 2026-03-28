@@ -16,6 +16,7 @@ import {
     FaChevronRight,
 } from 'react-icons/fa';
 import Toaster from '../common/Toaster';
+import { useSettings } from '../../context/SettingsContext';
 
 export default function AppLayout({ children }) {
     const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -33,6 +34,8 @@ export default function AppLayout({ children }) {
     const notifRef = useRef(null);
 
     const role = user?.role || '';
+    const { settings } = useSettings();
+    const [org, setOrg] = useState({ logo: '', brandName: '', instituteName: '' });
 
     useEffect(() => {
         const close = (e) => {
@@ -42,6 +45,18 @@ export default function AppLayout({ children }) {
         document.addEventListener('mousedown', close);
         return () => document.removeEventListener('mousedown', close);
     }, []);
+
+    useEffect(() => {
+        // defer to avoid synchronous setState warning
+        const id = requestAnimationFrame(() => {
+            setOrg({
+                logo: settings?.logo || '',
+                brandName: settings?.brandName || '',
+                instituteName: settings?.instituteName || '',
+            });
+        });
+        return () => cancelAnimationFrame(id);
+    }, [settings]);
 
     const toggleSection = (id) => {
         setOpenSections((prev) => ({ ...prev, [id]: !prev[id] }));
@@ -63,16 +78,22 @@ export default function AppLayout({ children }) {
             <Toaster />
             {/* Sidebar */}
             <aside
-                className={`fixed top-0 left-0 z-40 h-screen transition-all duration-300 ease-in-out flex flex-col bg-white border-r border-gray-200/80 shadow-sm ${
-                    sidebarOpen ? 'w-64 translate-x-0' : 'w-0 -translate-x-full overflow-hidden'
-                }`}
+                className={`fixed top-0 left-0 z-40 h-screen transition-all duration-300 ease-in-out flex flex-col bg-white border-r border-gray-200/80 shadow-sm ${sidebarOpen ? 'w-64 translate-x-0' : 'w-0 -translate-x-full overflow-hidden'
+                    }`}
             >
-                <div className="flex items-center justify-between h-16 px-4 border-b border-gray-100 shrink-0 bg-gradient-to-r from-indigo-600 to-indigo-700">
+                <div className="flex items-center justify-between h-16 px-4 border-b border-gray-100 shrink-0 bg-gradient-to-r ">
+                 
                     <div className="flex items-center gap-3 text-white min-w-0">
-                        <FaGraduationCap className="text-2xl shrink-0" />
-                        <div className="min-w-0">
-                            <h1 className="text-lg font-bold leading-tight truncate">Kulguru Solution Point</h1>
-                            <p className="text-xs opacity-90 uppercase tracking-wider">Programs Management</p>
+                        <div className="w-full h-16 flex items-center justify-center overflow-hidden">
+                            {org?.logo ? (
+                            <img
+                                src={org.logo}
+                                alt="Logo"
+                                className="w-full h-full object-cover p-1"
+                            />
+                            ) : (
+                            <FaGraduationCap className="text-xl text-indigo-600" />
+                            )}
                         </div>
                     </div>
                     <button
@@ -96,8 +117,6 @@ export default function AppLayout({ children }) {
                         if (visibleItems.length === 0) return null;
 
                         const isOpen = openSections[section.id];
-                        const hasActive = visibleItems.some((item) => isItemActive(item.path));
-
                         return (
                             <div key={section.id} className="mb-1">
                                 <button
@@ -124,16 +143,14 @@ export default function AppLayout({ children }) {
                                                         navigate(item.path);
                                                         if (window.innerWidth < 1024) setSidebarOpen(false);
                                                     }}
-                                                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                                                        active
-                                                            ? 'bg-indigo-50 text-indigo-700'
-                                                            : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                                                    }`}
+                                                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${active
+                                                        ? 'bg-indigo-50 text-indigo-700'
+                                                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                                                        }`}
                                                 >
                                                     <item.icon
-                                                        className={`w-5 h-5 shrink-0 ${
-                                                            active ? 'text-indigo-600' : 'text-gray-400'
-                                                        }`}
+                                                        className={`w-5 h-5 shrink-0 ${active ? 'text-indigo-600' : 'text-gray-400'
+                                                            }`}
                                                     />
                                                     <span className="truncate">{item.label}</span>
                                                 </button>
@@ -154,9 +171,8 @@ export default function AppLayout({ children }) {
 
             {/* Main area */}
             <div
-                className={`transition-all duration-300 min-h-screen flex flex-col ${
-                    sidebarOpen ? 'lg:ml-64' : 'ml-0'
-                }`}
+                className={`transition-all duration-300 min-h-screen flex flex-col ${sidebarOpen ? 'lg:ml-64' : 'ml-0'
+                    }`}
             >
                 <header className="sticky top-0 z-30 h-16 bg-white/95 backdrop-blur border-b border-gray-200/80 flex items-center justify-between px-4 lg:px-6">
                     <div className="flex items-center gap-3">

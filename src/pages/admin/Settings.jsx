@@ -2,6 +2,7 @@ import { useRef, useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { FaUser, FaLock, FaPalette, FaSave, FaCog } from 'react-icons/fa';
 import api from '../../utils/api';
+import { useSettings } from '../../context/SettingsContext';
 import { getMe } from '../../features/auth/authSlice';
 
 const Settings = () => {
@@ -19,10 +20,13 @@ const Settings = () => {
         email: user?.email || '',
         role: user?.role || '',
     });
+    const { settings: ctxSettings, setSettings: setCtxSettings } = useSettings();
     const [generalSettings, setGeneralSettings] = useState({});
     const [generalLoading, setGeneralLoading] = useState(false);
     const [generalSaving, setGeneralSaving] = useState(false);
     const [generalError, setGeneralError] = useState(null);
+    const [generalMessage, setGeneralMessage] = useState(null);
+    const logoInputRef = useRef(null);
 
     useEffect(() => {
         if (activeTab === 'profile') {
@@ -44,12 +48,11 @@ const Settings = () => {
         if (activeTab === 'general') {
             setGeneralLoading(true);
             setGeneralError(null);
-            api.get('/settings')
-                .then(({ data }) => setGeneralSettings(data.data || {}))
-                .catch(() => setGeneralSettings({}))
-                .finally(() => setGeneralLoading(false));
+            // Load from context first (already fetched globally)
+            setGeneralSettings(ctxSettings || {});
+            setGeneralLoading(false);
         }
-    }, [activeTab, dispatch]);
+    }, [activeTab, dispatch, ctxSettings]);
 
     const handleSaveProfile = () => {
         const id = user?._id || user?.id;
@@ -109,10 +112,48 @@ const Settings = () => {
     const handleSaveGeneral = () => {
         setGeneralSaving(true);
         setGeneralError(null);
+        setGeneralMessage(null);
         api.put('/settings', { settings: generalSettings })
-            .then(({ data }) => setGeneralSettings(data.data || {}))
+            .then(({ data }) => {
+                const next = data.data || {};
+                setGeneralSettings(next);
+                setCtxSettings(next);
+            })
+            .then(() => setGeneralMessage('Settings saved.'))
             .catch((err) => setGeneralError(err.response?.data?.message || 'Failed to save'))
             .finally(() => setGeneralSaving(false));
+    };
+
+    const handlePickLogo = () => {
+        logoInputRef.current?.click();
+    };
+
+    const handleLogoSelected = async (e) => {
+        const file = e.target.files?.[0];
+        e.target.value = '';
+        if (!file) return;
+        if (!file.type?.startsWith('image/')) {
+            setGeneralError('Please select an image file.');
+            return;
+        }
+        if (file.size > 5 * 1024 * 1024) {
+            setGeneralError('Image must be under 5MB.');
+            return;
+        }
+        setGeneralError(null);
+        setGeneralMessage(null);
+        try {
+            const fd = new FormData();
+            fd.append('image', file);
+            const res = await api.post('/upload/logo', fd);
+            const url = res.data?.data?.url;
+            if (!url) throw new Error('Upload failed');
+            setGeneralSettings((prev) => ({ ...prev, logoUrl: url }));
+            setCtxSettings((prev) => ({ ...(prev || {}), logoUrl: url }));
+            setGeneralMessage('Logo uploaded.');
+        } catch (err) {
+            setGeneralError(err.response?.data?.message || err.message || 'Failed to upload logo');
+        }
     };
 
     return (
@@ -369,62 +410,305 @@ const Settings = () => {
                                             {generalError}
                                         </div>
                                     )}
-                                    <div className="space-y-4 max-w-lg">
-                                        <p className="text-sm text-gray-500">
-                                            Site-wide key-value settings. Add or edit keys as needed.
-                                        </p>
-                                        <div className="flex gap-4 items-end">
-                                            <div className="flex-1">
-                                                <label className="block text-sm font-medium text-gray-700 mb-1">Key</label>
-                                                <input
-                                                    type="text"
-                                                    placeholder="e.g. siteName"
-                                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                                                    onKeyDown={(e) => {
-                                                        if (e.key === 'Enter') {
-                                                            const key = e.target.value?.trim();
-                                                            if (key && !generalSettings[key]) {
-                                                                setGeneralSettings((prev) => ({ ...prev, [key]: '' }));
-                                                                e.target.value = '';
+                                    <div className="space-y-6">
+                                        {/* Branding */}
+                                        <div className="space-y-3 max-w-2xl">
+                                            <h3 className="text-lg font-semibold text-gray-800">Branding</h3>
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-16 h-16 rounded-md border bg-white overflow-hidden flex items-center justify-center">
+                                                    {generalSettings.logoUrl ? (
+                                                        <img
+                                                            src={
+                                                                generalSettings.logoUrl.startsWith('http')
+                                                                    ? generalSettings.logoUrl
+                                                                    : `${import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000'}${generalSettings.logoUrl}`
                                                             }
-                                                        }
-                                                    }}
-                                                />
-                                            </div>
-                                        </div>
-                                        <div className="space-y-3">
-                                            {Object.entries(generalSettings).map(([key, value]) => (
-                                                <div key={key} className="flex gap-2 items-center">
-                                                    <span className="text-sm font-medium text-gray-700 w-32 truncate">{key}</span>
+                                                            alt="Logo"
+                                                            className="w-full h-full object-contain p-1"
+                                                        />
+                                                    ) : (
+                                                        <div className="text-xs text-gray-400">No Logo</div>
+                                                    )}
+                                                </div>
+                                                <div>
                                                     <input
-                                                        type="text"
-                                                        value={typeof value === 'string' ? value : JSON.stringify(value)}
-                                                        onChange={(e) => setGeneralSettings((prev) => ({ ...prev, [key]: e.target.value }))}
-                                                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                                                        ref={logoInputRef}
+                                                        type="file"
+                                                        accept="image/*"
+                                                        className="hidden"
+                                                        onChange={handleLogoSelected}
                                                     />
                                                     <button
                                                         type="button"
-                                                        onClick={() => setGeneralSettings((prev) => {
-                                                            const next = { ...prev };
-                                                            delete next[key];
-                                                            return next;
-                                                        })}
-                                                        className="text-red-600 hover:text-red-800 text-sm"
+                                                        onClick={handlePickLogo}
+                                                        className="px-4 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
                                                     >
-                                                        Remove
+                                                        Upload Logo
                                                     </button>
+                                                    <p className="text-xs text-gray-500 mt-1">PNG/JPG up to 5MB. URL is set automatically after upload.</p>
                                                 </div>
-                                            ))}
+                                            </div>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-1">Brand Name</label>
+                                                    <input
+                                                        type="text"
+                                                        value={generalSettings.brandName || ''}
+                                                        onChange={(e) => setGeneralSettings((p) => ({ ...p, brandName: e.target.value }))}
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-1">Institute Name</label>
+                                                    <input
+                                                        type="text"
+                                                        value={generalSettings.instituteName || ''}
+                                                        onChange={(e) => setGeneralSettings((p) => ({ ...p, instituteName: e.target.value }))}
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                                                    />
+                                                </div>
+                                            </div>
                                         </div>
-                                        <button
-                                            type="button"
-                                            onClick={handleSaveGeneral}
-                                            disabled={generalSaving}
-                                            className="flex items-center space-x-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-                                        >
-                                            <FaSave />
-                                            <span>{generalSaving ? 'Saving...' : 'Save Settings'}</span>
-                                        </button>
+
+                                        {/* Contact */}
+                                        <div className="space-y-3 max-w-2xl">
+                                            <h3 className="text-lg font-semibold text-gray-800">Contact</h3>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-1">Primary Phone</label>
+                                                    <input
+                                                        type="text"
+                                                        value={generalSettings.phone || ''}
+                                                        onChange={(e) => setGeneralSettings((p) => ({ ...p, phone: e.target.value }))}
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-1">Contact Phone</label>
+                                                    <input
+                                                        type="text"
+                                                        value={generalSettings.contactPhone || ''}
+                                                        onChange={(e) => setGeneralSettings((p) => ({ ...p, contactPhone: e.target.value }))}
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-1">Primary Email</label>
+                                                    <input
+                                                        type="email"
+                                                        value={generalSettings.email || ''}
+                                                        onChange={(e) => setGeneralSettings((p) => ({ ...p, email: e.target.value }))}
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-1">Contact Email</label>
+                                                    <input
+                                                        type="email"
+                                                        value={generalSettings.contactEmail || ''}
+                                                        onChange={(e) => setGeneralSettings((p) => ({ ...p, contactEmail: e.target.value }))}
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                                                    />
+                                                </div>
+                                                <div className="md:col-span-2">
+                                                    <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
+                                                    <textarea
+                                                        rows={3}
+                                                        value={generalSettings.address || ''}
+                                                        onChange={(e) => setGeneralSettings((p) => ({ ...p, address: e.target.value }))}
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* WhatsApp */}
+                                        <div className="space-y-3 max-w-2xl">
+                                            <h3 className="text-lg font-semibold text-gray-800">Social Media</h3>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-1">WhatsApp Number (+91...)</label>
+                                                    <input
+                                                        type="text"
+                                                        value={generalSettings.whatsapp || ''}
+                                                        onChange={(e) => setGeneralSettings((p) => ({ ...p, whatsapp: e.target.value }))}
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-1">Facebook URL (optional)</label>
+                                                    <input
+                                                        type="text"
+                                                        value={generalSettings.facebook  || ''}
+                                                        onChange={(e) => setGeneralSettings((p) => ({ ...p, facebook: e.target.value }))}
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-1">Twitter URL (optional)</label>
+                                                    <input
+                                                        type="text"
+                                                        value={generalSettings.twitter || ''}
+                                                        onChange={(e) => setGeneralSettings((p) => ({ ...p, twitter: e.target.value }))}
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-1">Instagram URL (optional)</label>
+                                                    <input
+                                                        type="text"
+                                                        value={generalSettings.instagram  || ''}
+                                                        onChange={(e) => setGeneralSettings((p) => ({ ...p, instagram: e.target.value }))}
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-1">LinkedIn URL (optional)</label>
+                                                    <input
+                                                        type="text"
+                                                        value={generalSettings.linkedin || ''}
+                                                        onChange={(e) => setGeneralSettings((p) => ({ ...p, linkedin: e.target.value }))}
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-1">YouTube URL (optional)</label>
+                                                    <input
+                                                        type="text"
+                                                        value={generalSettings.youtube  || ''}
+                                                        onChange={(e) => setGeneralSettings((p) => ({ ...p, youtube: e.target.value }))}
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* UI Preferences */}
+                                        <div className="space-y-3 max-w-2xl">
+                                            <h3 className="text-lg font-semibold text-gray-800">Preferences</h3>
+                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-1">Theme</label>
+                                                    <select
+                                                        value={generalSettings.theme || 'light'}
+                                                        onChange={(e) => setGeneralSettings((p) => ({ ...p, theme: e.target.value }))}
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                                                    >
+                                                        <option value="light">Light</option>
+                                                        <option value="dark">Dark</option>
+                                                    </select>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-1">Language</label>
+                                                    <input
+                                                        type="text"
+                                                        value={generalSettings.language || 'en'}
+                                                        onChange={(e) => setGeneralSettings((p) => ({ ...p, language: e.target.value }))}
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-1">Timezone</label>
+                                                    <input
+                                                        type="text"
+                                                        value={generalSettings.timezone || 'Asia/Kolkata'}
+                                                        onChange={(e) => setGeneralSettings((p) => ({ ...p, timezone: e.target.value }))}
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* SMTP */}
+                                        <div className="space-y-3 max-w-2xl">
+                                            <h3 className="text-lg font-semibold text-gray-800">SMTP</h3>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-1">Host</label>
+                                                    <input
+                                                        type="text"
+                                                        value={generalSettings.smtpHost || ''}
+                                                        onChange={(e) => setGeneralSettings((p) => ({ ...p, smtpHost: e.target.value }))}
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-1">Port</label>
+                                                    <input
+                                                        type="number"
+                                                        value={generalSettings.smtpPort ?? 587}
+                                                        onChange={(e) => setGeneralSettings((p) => ({ ...p, smtpPort: Number(e.target.value || 0) }))}
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-1">User</label>
+                                                    <input
+                                                        type="text"
+                                                        value={generalSettings.smtpUser || ''}
+                                                        onChange={(e) => setGeneralSettings((p) => ({ ...p, smtpUser: e.target.value }))}
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                                                    <input
+                                                        type="password"
+                                                        value={generalSettings.smtpPass || ''}
+                                                        onChange={(e) => setGeneralSettings((p) => ({ ...p, smtpPass: e.target.value }))}
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                                                    />
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <input
+                                                        id="smtpSecure"
+                                                        type="checkbox"
+                                                        checked={Boolean(generalSettings.smtpSecure)}
+                                                        onChange={(e) => setGeneralSettings((p) => ({ ...p, smtpSecure: e.target.checked }))}
+                                                        className="h-4 w-4"
+                                                    />
+                                                    <label htmlFor="smtpSecure" className="text-sm font-medium text-gray-700">Use TLS/SSL</label>
+                                                </div>
+                                                <div />
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-1">From Name</label>
+                                                    <input
+                                                        type="text"
+                                                        value={generalSettings.smtpFromName || ''}
+                                                        onChange={(e) => setGeneralSettings((p) => ({ ...p, smtpFromName: e.target.value }))}
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-1">From Email</label>
+                                                    <input
+                                                        type="email"
+                                                        value={generalSettings.smtpFromEmail || ''}
+                                                        onChange={(e) => setGeneralSettings((p) => ({ ...p, smtpFromEmail: e.target.value }))}
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="pt-2">
+                                            <button
+                                                type="button"
+                                                onClick={handleSaveGeneral}
+                                                disabled={generalSaving}
+                                                className="flex items-center space-x-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                                            >
+                                                <FaSave />
+                                                <span>{generalSaving ? 'Saving...' : 'Save Settings'}</span>
+                                            </button>
+                                            {generalMessage && (
+                                                <span className="ml-3 text-sm text-green-700">{generalMessage}</span>
+                                            )}
+                                        </div>
                                     </div>
                                 </>
                             )}

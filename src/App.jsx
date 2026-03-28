@@ -19,6 +19,7 @@ import Banners from './pages/admin/Banners';
 import BannerForm from './pages/admin/BannerForm';
 
 import './index.css';
+import { SettingsProvider } from './context/SettingsContext';
 
 // Allow all known roles to access the main app shell.
 // Fine‑grained access to specific pages can be added per‑route later if needed.
@@ -27,8 +28,9 @@ const allowedPanelRoles = ['super_admin', 'admin', 'teacher', 'student'];
 function App() {
     return (
         <Provider store={store}>
-            <Router>
-                <Routes>
+            <SettingsProvider>
+                <Router>
+                    <Routes>
                     <Route path="/login" element={<Login />} />
                     <Route path="/unauthorized" element={<Unauthorized />} />
                     <Route
@@ -57,15 +59,16 @@ function App() {
                                         <Route path="teacher-dashboard" element={<TeacherDashboard />} />
                                         <Route path="student-dashboard" element={<StudentDashboard />} />
                                         <Route path="*" element={<Navigate to="/app/dashboard" replace />} />
-                                    </Routes>
-                                </AppLayout>
-                            </ProtectedRoute>
-                        }
-                    />
-                    <Route path="/" element={<Navigate to="/login" replace />} />
-                    <Route path="*" element={<Navigate to="/login" replace />} />
-                </Routes>
-            </Router>
+                                        </Routes>
+                                    </AppLayout>
+                                </ProtectedRoute>
+                            }
+                        />
+                        <Route path="/" element={<Navigate to="/login" replace />} />
+                        <Route path="*" element={<Navigate to="/login" replace />} />
+                    </Routes>
+                </Router>
+            </SettingsProvider>
         </Provider>
     );
 }
