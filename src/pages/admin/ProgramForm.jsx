@@ -21,6 +21,8 @@ export default function ProgramForm() {
         fee: '',
         status: 'active',
     });
+    const [selectedFile, setSelectedFile] = useState(null);
+    const [imagePreview, setImagePreview] = useState('');
     const [formErrors, setFormErrors] = useState({});
     const [loading, setLoading] = useState(false);
     const [fetchLoading, setFetchLoading] = useState(isEditing);
@@ -42,6 +44,7 @@ export default function ProgramForm() {
                             fee: p.fee ?? '',
                             status: p.status || 'active',
                         });
+                        setImagePreview(p.image || p.imageUrl || '');
                     }
                 })
                 .catch((err) => setError(err.response?.data?.message || 'Failed to load program'))
@@ -70,21 +73,33 @@ export default function ProgramForm() {
         return Object.keys(errors).length === 0;
     };
 
+    const handleFileChange = (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        if (!file.type?.startsWith('image/')) {
+            setFormErrors((prev) => ({ ...prev, image: 'Please select a valid image file' }));
+            return;
+        }
+        setSelectedFile(file);
+        setImagePreview(URL.createObjectURL(file));
+        if (formErrors.image) setFormErrors((prev) => ({ ...prev, image: '' }));
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!validate()) return;
         setLoading(true);
         setError(null);
         try {
-            const payload = {
-                name: formData.name.trim(),
-                code: formData.code.trim().toUpperCase(),
-                description: formData.description?.trim() || undefined,
-                duration: formData.duration.trim(),
-                eligibility: formData.eligibility?.trim() || undefined,
-                fee: formData.fee !== '' ? parseFloat(formData.fee) : undefined,
-                status: formData.status === 'active' ? 'active' : 'inactive',
-            };
+            const payload = new FormData();
+            payload.append('name', formData.name.trim());
+            payload.append('code', formData.code.trim().toUpperCase());
+            payload.append('description', formData.description?.trim() || '');
+            payload.append('duration', formData.duration.trim());
+            payload.append('eligibility', formData.eligibility?.trim() || '');
+            if (formData.fee !== '') payload.append('fee', String(parseFloat(formData.fee)));
+            payload.append('status', formData.status === 'active' ? 'active' : 'inactive');
+            if (selectedFile) payload.append('image', selectedFile);
             if (isEditing) {
                 await api.put(`${API_BASE}/${id}`, payload);
             } else {
@@ -175,6 +190,24 @@ export default function ProgramForm() {
                                 className="w-full px-3 py-2 border border-gray-300 rounded-md"
                                 placeholder="Program description"
                             />
+                        </div>
+                        <div className="md:col-span-2">
+                            <label htmlFor="image" className="block text-sm font-medium text-gray-700 mb-2">Program Image</label>
+                            {imagePreview && (
+                                <img
+                                    src={imagePreview}
+                                    alt="Program preview"
+                                    className="h-44 w-full max-w-md rounded-lg object-cover border border-gray-200 mb-3"
+                                />
+                            )}
+                            <input
+                                id="image"
+                                type="file"
+                                accept="image/*"
+                                onChange={handleFileChange}
+                                className={`w-full px-3 py-2 border rounded-md ${formErrors.image ? 'border-red-500' : 'border-gray-300'}`}
+                            />
+                            {formErrors.image && <p className="mt-1 text-sm text-red-600">{formErrors.image}</p>}
                         </div>
                         <div>
                             <label htmlFor="eligibility" className="block text-sm font-medium text-gray-700 mb-2">Eligibility</label>

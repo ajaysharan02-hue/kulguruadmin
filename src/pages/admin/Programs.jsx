@@ -86,13 +86,24 @@ export default function Programs() {
             key: 'name',
             header: 'Program',
             sortable: true,
-            render: (row) => (
+            render: (row) => {
+                const imageSrc = row.image || row.imageUrl;
+                return (
                 <div className="flex items-center">
-                    <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center shrink-0">
-                        <span className="text-blue-600 font-semibold text-sm">
-                            {row.name?.charAt(0)?.toUpperCase() || '?'}
-                        </span>
-                    </div>
+                    {imageSrc ? (
+                        <img
+                            src={imageSrc}
+                            alt={row.name || 'Program image'}
+                            className="h-10 w-10 rounded-lg object-cover shrink-0 border border-gray-200"
+                            loading="lazy"
+                        />
+                    ) : (
+                        <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center shrink-0">
+                            <span className="text-blue-600 font-semibold text-sm">
+                                {row.name?.charAt(0)?.toUpperCase() || '?'}
+                            </span>
+                        </div>
+                    )}
                     <div className="ml-4">
                         <div className="text-sm font-medium text-gray-900">{row.name}</div>
                         <div className="text-sm text-gray-500 truncate max-w-[200px]">
@@ -100,7 +111,7 @@ export default function Programs() {
                         </div>
                     </div>
                 </div>
-            ),
+            )},
         },
         {
             key: 'code',
