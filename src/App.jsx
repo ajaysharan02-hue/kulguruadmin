@@ -17,6 +17,8 @@ import ProgramForm from './pages/admin/ProgramForm';
 import Inquiries from './pages/admin/Inquiries';
 import Banners from './pages/admin/Banners';
 import BannerForm from './pages/admin/BannerForm';
+import ServicePartners from './pages/admin/ServicePartners';
+import ServicePartnerForm from './pages/admin/ServicePartnerForm';
 
 import './index.css';
 import { SettingsProvider } from './context/SettingsContext';
@@ -52,6 +54,10 @@ function App() {
                                         <Route path="banners" element={<Banners />} />
                                         <Route path="banners/new" element={<BannerForm />} />
                                         <Route path="banners/:id/edit" element={<BannerForm />} />
+
+                                        <Route path="service-partners" element={<ServicePartners />} />
+                                        <Route path="service-partners/new" element={<ServicePartnerForm />} />
+                                        <Route path="service-partners/:id/edit" element={<ServicePartnerForm />} />
 
                                         <Route path="inquiries" element={<Inquiries />} />
 

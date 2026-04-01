@@ -602,7 +602,7 @@ const Settings = () => {
                                                         <option value="dark">Dark</option>
                                                     </select>
                                                 </div>
-                                                <div>
+                                                {/* <div>
                                                     <label className="block text-sm font-medium text-gray-700 mb-1">Language</label>
                                                     <input
                                                         type="text"
@@ -619,7 +619,7 @@ const Settings = () => {
                                                         onChange={(e) => setGeneralSettings((p) => ({ ...p, timezone: e.target.value }))}
                                                         className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                                                     />
-                                                </div>
+                                                </div> */}
                                             </div>
                                         </div>
 
