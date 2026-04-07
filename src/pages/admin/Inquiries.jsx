@@ -168,9 +168,10 @@ export default function Inquiries() {
             key: 'program',
             header: 'Program',
             render: (row) => (
-                <span className="text-sm text-gray-900">
-                    {row.program?.name || '—'}
-                </span>
+                <div>
+                    <div className="text-sm text-gray-900">{row.program?.name || '—'}</div>
+                    <div className="text-xs text-gray-500">{row.course?.name || 'No course selected'}</div>
+                </div>
             ),
         },
         {
@@ -314,6 +315,10 @@ export default function Inquiries() {
                             <div>
                                 <label className="block text-sm font-medium text-gray-700">Program</label>
                                 <p className="mt-1 text-sm text-gray-900">{selectedInquiry.program?.name || '—'}</p>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700">Course</label>
+                                <p className="mt-1 text-sm text-gray-900">{selectedInquiry.course?.name || '—'}</p>
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-700">Status</label>

@@ -7,6 +7,7 @@ import PageHeader from '../../components/common/PageHeader';
 import Spinner from '../../components/common/Spinner';
 
 const API_BASE = '/servicepatners';
+const FALLBACK_IMAGE = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40"><rect width="100%" height="100%" fill="%23f3f4f6"/><text x="50%" y="53%" dominant-baseline="middle" text-anchor="middle" font-size="9" fill="%239ca3af">No Img</text></svg>';
 
 function resolveImageSrc(row) {
     const img = row.image || row.imageUrl;
@@ -99,10 +100,11 @@ export default function ServicePartners() {
                     <div className="flex-shrink-0 h-10 w-10 rounded-lg overflow-hidden bg-gray-100 border border-gray-200">
                         <img
                             className="h-10 w-10 object-cover"
-                            src={resolveImageSrc(row) || 'https://via.placeholder.com/40?text=—'}
+                            src={resolveImageSrc(row) || FALLBACK_IMAGE}
                             alt={row.name}
                             onError={(e) => {
-                                e.target.src = 'https://via.placeholder.com/40?text=—';
+                                e.currentTarget.onerror = null;
+                                e.currentTarget.src = FALLBACK_IMAGE;
                             }}
                         />
                     </div>

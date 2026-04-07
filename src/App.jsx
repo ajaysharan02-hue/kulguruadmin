@@ -14,6 +14,8 @@ import RolePermissionManager from './pages/roles/RolePermissionManager';
 import Settings from './pages/admin/Settings';
 import Programs from './pages/admin/Programs';
 import ProgramForm from './pages/admin/ProgramForm';
+import Courses from './pages/admin/Courses';
+import CourseForm from './pages/admin/CourseForm';
 import Inquiries from './pages/admin/Inquiries';
 import Banners from './pages/admin/Banners';
 import BannerForm from './pages/admin/BannerForm';
@@ -50,6 +52,9 @@ function App() {
                                         <Route path="programs" element={<Programs />} />
                                         <Route path="programs/new" element={<ProgramForm />} />
                                         <Route path="programs/:id/edit" element={<ProgramForm />} />
+                                        <Route path="courses" element={<Courses />} />
+                                        <Route path="courses/new" element={<CourseForm />} />
+                                        <Route path="courses/:id/edit" element={<CourseForm />} />
 
                                         <Route path="banners" element={<Banners />} />
                                         <Route path="banners/new" element={<BannerForm />} />

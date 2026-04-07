@@ -66,7 +66,7 @@ const Login = () => {
                         <FaGraduationCap className="text-4xl text-primary-600" />
                     </div>
                     <h1 className="text-4xl font-bold text-white mb-2">
-                        Kulguru Institute of Technology and Management
+                        Kulgurusp Institute of Technology and Management
                     </h1>
                     <p className="text-primary-100">
                         Sign in to access your dashboard
@@ -204,7 +204,7 @@ const Login = () => {
 
                 {/* Footer */}
                 <p className="text-center text-primary-100 text-sm mt-8">
-                    © 2026 Kulguru Institute of Technology and Management. All rights reserved.
+                    © 2026 Kulgurusp Institute of Technology and Management. All rights reserved.
                 </p>
             </div>
         </div>

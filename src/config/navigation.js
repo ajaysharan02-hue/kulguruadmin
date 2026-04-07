@@ -11,6 +11,7 @@ import {
     FaQuestionCircle,
     FaAffiliatetheme,
     FaHandshake,
+    FaGraduationCap,
 } from 'react-icons/fa';
 
 const BASE = '/app';
@@ -32,6 +33,7 @@ export const navSections = [
             { path: `${BASE}/banners`, label: 'Banners', icon: FaAffiliatetheme, roles: null },
             { path: `${BASE}/service-partners`, label: 'Service partners', icon: FaHandshake, roles: null },
             { path: `${BASE}/programs`, label: 'Programs', icon: FaBook, roles: null },
+            { path: `${BASE}/courses`, label: 'Courses', icon: FaGraduationCap, roles: null },
             { path: `${BASE}/inquiries`, label: 'Inquiries', icon: FaQuestionCircle, roles: null },
             { path: `${BASE}/roles`, label: 'Roles & Permissions', icon: FaUserShield, roles: null },
         ],
